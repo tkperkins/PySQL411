@@ -11,11 +11,6 @@ class gate:
 	seen_FROM = False
 	seen_WHERE = False
 
-class argGate:
-	seen_LEFT = False
-	seen_OPERATOR = False
-	seen_RIGHT = False
-
 class AliasGroup():
 	def __init__(self,Name,Alias,Type):
 		self.Name = Name
@@ -41,7 +36,7 @@ class sqlParts:
 	Attributes = []
 	Tables = []
 
-operators = ["=","!=",">","<",">=","<=","<>",","]
+operators = ["=","!=",">","<",">=","<=","<>",",","LIKE"]
 
 boolean = ["AND","OR","NOT"] 
 
@@ -161,7 +156,7 @@ def SortTokens(tokens, s,g):
 def FindAttributeAliases(listedElements, groupedElements,typeElement):
 	count = 0
 	tokenCount = 0	
-	# A two dimensional object
+	# An object with two attributes
 	Attributes = AliasGroup("","","") 
 	newGroup = True
 	for token in listedElements:
@@ -197,69 +192,74 @@ def is_Type(o,dtype):
 	return False
 
 def FindArguments(s):
-
-	a =  argGate()
+	seen_OPERATOR = False
+	in_QUOTE = False
+	#an object with 4 attributes
 	where = WhereClause("","","","","")
-	noWhere = WhereClause("","","","","")
+	arg = ""
 	for token in s.myConditions:
-		if is_Type(token,boolean):
-			where.boolean = str(token)
-			where.Type = "BOOLEAN"
-			print "BOOLEAN" + str(token)
+		try:
+			if in_QUOTE == False and token.index("'") >= 0:
+				in_QUOTE = True
+				arg = token
+				#print arg
+			elif in_QUOTE and token.index("'") >= 0:
+				arg = arg + " " + token
+				in_QUOTE = False				
+				#print arg
+		except:
+			if in_QUOTE:
+				arg = arg + token
+				#
+				#print arg
+		
+		if in_QUOTE == False and arg == "":
+			if is_Type(token,boolean):
+				where.boolean = str(token)
+				where.Type = "BOOLEAN"
+				s.myArguments.insert(len(s.myArguments),where)
+				where = WhereClause("","","","","")
+			elif is_Type(token,operators):
+				seen_OPERATOR  = True
+				where.operator = token
+			elif seen_OPERATOR  != True:
+				where.left = token
+			elif seen_OPERATOR  == True:
+				where.right = token
+				where.Type = "ARGUMENT"
+				s.myArguments.insert(len(s.myArguments),where)
+				seen_OPERATOR  = False
+				where = WhereClause("","","","","")
+		elif in_QUOTE == False and arg != "":
+			if seen_OPERATOR  != True:
+				where.Type = "LIKE"				
+				where.left = "LIKE"
+				where.right = arg
+				s.myArguments.insert(len(s.myArguments),where)
+				arg = ""
+				where = WhereClause("","","","","")
+			elif seen_OPERATOR  == True:
+				where.right = arg
+				where.Type = "ARGUMENT"
+				s.myArguments.insert(len(s.myArguments),where)
+				seen_OPERATOR  = False
+				where = WhereClause("","","","","")
+			where.Type = "QUOTE"
+			where.left = arg
 			s.myArguments.insert(len(s.myArguments),where)
+			arg = ""
 			where = WhereClause("","","","","")
-		elif is_Type(token,operators):
-			a.seen_OPERATOR = True
-			where.operator = token
-			print "OPERATOR " + token
-		elif a.seen_OPERATOR != True:
-			print "LEFT " + token
-			where.left = token
-		elif a.seen_OPERATOR == True:
-			where.right = token
-			where.Type = "ARGUMENT"
-			print "RIGHT " + token
-			s.myArguments.insert(len(s.myArguments),where)
-			a.seen_OPERATOR = False
-			where = WhereClause("","","","","")
-				
-		#elif(tokenCount == len(s.myConditions)):
-		#	argStr = argStr + token
-		#	s.myArguments.insert(len(s.myArguments),argStr)	
-		#elif (count <= 2 and not is_Type(token,boolean)):
-		#	argStr = argStr + token + " "
-		#elif (count == 3 and tokenCount == (operator_index + 1) and operator_index != 0  and not is_Type(token,boolean)):
-		#	argStr = argStr + token
-		#	s.myArguments.insert(len(s.myArguments),argStr)
-		#	count = 0 			
-		#	argStr = ""
-		#	operator_index = 0
-		#elif (count == 3  and not is_Type(token,boolean)):
-		#	argStr = argStr + token + " "
-		#elif (tokenCount == (operator_index + 1) and operator_index != 0):
-		#	argStr = argStr + token 			
-		#	s.myArguments.insert(len(s.myArguments),argStr)
-		#	count = 0			
-		#	argStr = ""
-		#	operator_index = 0
-
 def PrintTokens(s):
 
-	print "ATTRIBUTES: "
-	for attribute in s.myAttributes:
-		print '\t' + attribute.replace(",","")
-	print "TABLES: "
-	for table in s.myTables:
-		print '\t' + table.replace(",","")
-	print "CONDITIONS: "
-	for condition in s.myConditions:
-		print '\t' + condition.replace(",","")
-	#print "WHERE COMPARISON OPERATORS: "
-	#for comparison in s.myComparisons:
-	#	print '\t' + comparison.replace(",","")
-	#print "WHERE BOOLEAN OPERATORS: "
-	#for boolean in s.myBooleans:
-	#	print '\t' + boolean.replace(",","")
+#	print "ATTRIBUTES: "
+#	for attribute in s.myAttributes:
+#		print '\t' + attribute.replace(",","")
+#	print "TABLES: "
+#	for table in s.myTables:
+#		print '\t' + table.replace(",","")
+#	print "CONDITIONS: "
+#	for condition in s.myConditions:
+#		print '\t' + condition.replace(",","")
 
 	print "********************** KEYWORDS ********************** "
 	for keyword in s.myKeywords:
@@ -278,4 +278,27 @@ def PrintTokens(s):
 		print str(obj.Type) + '\t\t' + str(obj.Name) + '\t\t' + str(obj.Alias).replace(",","")
 
 
+def Test():
+	sql = sys.argv[1]
+	sql = cleanString(sql)	
+	stmt = str(sql)
+	tokens = stmt.split()
+	in_QUOTE = False
+	arg = ""
+
+	for token in tokens:
+		try:
+			if in_QUOTE == False and token.index("'") >= 0:
+				in_QUOTE = True
+				arg = token
+				print arg
+			elif in_QUOTE and token.index("'") >= 0:
+				arg = arg + " " + token
+				print arg
+		except:
+			if in_QUOTE:
+				arg = arg + token
+				in_QUOTE = False
+				print arg
+#Test()
 Main()
