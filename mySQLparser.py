@@ -287,4 +287,13 @@ def Boolean(word):
 	else:
 		return ""
 
+def Test():
+	s = sqlParts()
+	#s.myArguments.boolean = sys.argv[1]
+	#s.insert(len(s),i)
+	operator = negateOperator(sys.argv[1])
+	
+	print operator
+ 
+#Test()
 Main()

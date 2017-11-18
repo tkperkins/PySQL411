@@ -13,9 +13,9 @@ def projectGlobals():
 	
 
 def sendParts(s):
-
-	showTokens(s)
+	#showTokens(s)
 	showFrames(s)
+	
 	#print dataframe and name of dataframe	
 	return
 
@@ -27,11 +27,57 @@ def showFrames(s):
 			if table.Name == i.name:
 				df.insert(len(df),i)
 
+	#Store the operands as more simplistic datatypes for 
+	#better readability
+	#l_col = s.myArguments[0].left
+	#r_col = s.myArguments[0].right
 
+	#display operands
+	#print l_col + " " + r_col
+	#print df[0].name
+	raw_input()
+	#merge the dataframes on shared values in specified cols
+	common = pd.merge(df[0],df[1],on='dummy')
+	#common = pd.merge(df[0],df[1],left_on=l_col, right_on=r_col)
+	#different = common[~df[0][l_col].isin(common[l_col])&~df[1][r_col].isin(common[r_col])]
+	print common
+	print "these are shared. Press <Enter> for different"	
+	#raw_input()
+	print df[0].name
+	#print different
+	#print "these are different"
 	
-	d = pd.merge(df[0],df[1],left_on=s.myArguments[0].left, right_on=s.myArguments[0].right)
-	print d
+	lf_Args = rt_Args = []
+	count = 0
 
+
+
+
+
+
+###################################################
+#IGNORE                                          #
+#################################################
+	#for arg in s.myArguments:
+	#	print "MY BOOLEAN: " + arg.boolean
+	#	if count == 0:
+	#		if arg.operator == '=':
+	#			lf_Args.insert(len(lf_Args),arg)
+	#	elif s.myArguments[count-1].boolean.upper() == "NOT":  
+	#		print "PREVIOUS BOOLEAN: " + s.myArguments[count-1].boolean
+	#		print "PREVIOUS OPERATOR: " + s.myArguments[count].operator
+	#		s.myArguments[count].operator = negateOperator(s.myArguments[count].operator)
+	#		print "MODIFIED OPERATOR: " + s.myArguments[count].operator
+	#	count = count + 1
+
+
+
+
+#&(~df[1][r_col].isin(common[r_col])]
+
+		#d = pd.merge(df[0],df[1],left_on=s.myArguments[0].left, right_on=s.myArguments[0].right)
+	#print d
+	#e = [(df[0][s.myArguments[0].left] != df[1][s.myArguments[0].right])]
 	#print local_df[0].name +" " + local_df[1].name + " " + local_df[2].name
 	#return	
 	
@@ -50,6 +96,24 @@ def buildDataFrames():
 		f2.name = g
 		f2['dummy']=0
 		perm_df.insert(len(perm_df),f2)
+
+#change the operator to its inverse
+#Done when an argument is preceded by NOT
+def negateOperator(o):
+	#"=","!=",">","<",">=","<=","<>"
+	if o == '=':
+		o = '<>'
+	elif o == '<':
+		o = '>='
+	elif o == '>':
+		o = '<='
+	elif o == '>=':
+		o = '<'
+	elif o == '<=':
+		o = '>'
+	elif o == '<>' or o =='!=':
+		o = '='
+	return o
 
 #Prints each of the tokens stored in the sqlParts object
 #that was received from mySQLreader.py

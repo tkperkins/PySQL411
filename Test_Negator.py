@@ -20,6 +20,6 @@ def negateOperator(o):
 def Test():
 	operator = negateOperator(sys.argv[1])
 	
-	print operator
+	print (operator)
  
 Test()
